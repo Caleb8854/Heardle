@@ -1,13 +1,14 @@
+from datetime import date
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List
-from applemusic import random_song, lookup_track
-import random, requests
+from applemusic import daily_song, lookup_track
+from game import isMatch
 
 
 
-class RandomSongOut(BaseModel):
+class SongOut(BaseModel):
     track_id: int
     title: str
     artist: str
@@ -23,7 +24,7 @@ class GuessIn(BaseModel):
 
 class GuessOut(BaseModel):
     valid: bool
-    ansewr: str
+    answer: str
 
 app = FastAPI()
 
@@ -39,18 +40,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/song",response_model=RandomSongOut)
-def get_random_song():
-
-    s = random_song(country="US")
+@app.get("/song",response_model=SongOut)
+def get_daily_song():
+    today = date.today().isoformat()
+    s = daily_song(today)
     if not s:
-        raise HTTPException(503, "No previewable tracks found")
-    return RandomSongOut(**s)
+        raise HTTPException(503, "No previewable track")
+    return SongOut(**s)
 
 @app.get("/preview", response_model=PreviewOut)
 def preview(track_id: int):
-    print("hi")
-    print("Incoming track_id:", track_id, type(track_id))
     tr = lookup_track(track_id)
     if not tr:
         raise HTTPException(status_code=404, detail="Track not found")
@@ -59,6 +58,18 @@ def preview(track_id: int):
     if not url:
         raise HTTPException(status_code=404, detail="No preview available")
     return PreviewOut(preview_url = url)
-
-s = random_song()
-print(preview(s))
+@app.get("/guess", response_model=GuessOut)
+def check_guess(guess: GuessIn):
+    today = date.today().isoformat()
+    s = daily_song(today)
+    if not s:
+        raise HTTPException(503, "No previewable track")
+    artist = s["artist"]
+    title = s["title"]
+    correct = isMatch(guess, artist, title)
+    return GuessOut(
+        valid = correct,
+        answer = f"{artist} - {title}"
+    )
+print(get_daily_song())
+print(check_guess("Whatcha say Jason Derulo"))
