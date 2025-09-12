@@ -1,12 +1,12 @@
 from datetime import date
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List
 from applemusic import daily_song, lookup_track
 from game import isMatch
 
-
+app = FastAPI()
 
 class SongOut(BaseModel):
     track_id: int
@@ -26,10 +26,10 @@ class GuessOut(BaseModel):
     valid: bool
     answer: str
 
-app = FastAPI()
 
 origins = [
-    "http://localhost:3000"
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
@@ -71,5 +71,3 @@ def check_guess(guess: GuessIn):
         valid = correct,
         answer = f"{artist} - {title}"
     )
-print(get_daily_song())
-print(check_guess("Whatcha say Jason Derulo"))
