@@ -9,7 +9,7 @@ export async function getSong(){
     return res.data;
 }
 
-export async function getPreview(track_id){
+export async function getPreview(){
     const res = await api.get("/preview",{ params: { track_id } });
     return res.data;
 }

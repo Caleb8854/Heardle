@@ -1,4 +1,5 @@
 from datetime import date
+from functools import lru_cache
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -7,25 +8,6 @@ from applemusic import daily_song, lookup_track
 from game import isMatch
 
 app = FastAPI()
-
-class SongOut(BaseModel):
-    track_id: int
-    title: str
-    artist: str
-    preview_url: str
-    artwork: str | None = None
-    rounds: List[int] = Field(default_factory=lambda: [1,3,7,15,30,30])
-
-class PreviewOut(BaseModel):
-    preview_url: str
-
-class GuessIn(BaseModel):
-    guess: str
-
-class GuessOut(BaseModel):
-    valid: bool
-    answer: str
-
 
 origins = [
     "http://localhost:5173",
@@ -40,10 +22,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class SongOut(BaseModel):
+    track_id: int
+    title: str
+    artist: str
+    preview_url: str
+    artwork: str | None = None
+    rounds: List[int] = Field(default_factory=lambda: [1,2,4,7,11,16])
+
+class PreviewOut(BaseModel):
+    preview_url: str
+
+class GuessOut(BaseModel):
+    valid: bool
+    answer: str
+
+@lru_cache(maxsize=8)
+def _pick_song_for_day(day: str):
+    # do your daily_song() work here (calls Apple once)
+    s = daily_song(day)
+    if not s:
+        return None
+    return s
+
 @app.get("/song",response_model=SongOut)
 def get_daily_song():
     today = date.today().isoformat()
-    s = daily_song(today)
+    s = _pick_song_for_day(today)
     if not s:
         raise HTTPException(503, "No previewable track")
     return SongOut(**s)
@@ -59,7 +64,7 @@ def preview(track_id: int):
         raise HTTPException(status_code=404, detail="No preview available")
     return PreviewOut(preview_url = url)
 @app.get("/guess", response_model=GuessOut)
-def check_guess(guess: GuessIn):
+def check_guess(guess: str):
     today = date.today().isoformat()
     s = daily_song(today)
     if not s:
@@ -69,5 +74,5 @@ def check_guess(guess: GuessIn):
     correct = isMatch(guess, artist, title)
     return GuessOut(
         valid = correct,
-        answer = f"{artist} - {title}"
+        answer = f"{title} - {artist}"
     )

@@ -28,8 +28,6 @@ def search_songs(term: str, *, limit: int, country: str = "US", offset: int = 0)
         timeout=10,
     )
     if res.status_code == 404:
-            # Log and return empty so daily_song can try next page/letter/country
-        
         return []
     res.raise_for_status()
     data = res.json()

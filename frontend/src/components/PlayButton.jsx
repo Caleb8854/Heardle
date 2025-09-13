@@ -1,6 +1,7 @@
-export default function MyButton({ onClick, children }) {
+export default function PlayButton({ onClick, children }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       style={{
         padding: "8px 16px",
