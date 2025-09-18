@@ -30,16 +30,12 @@ class SongOut(BaseModel):
     artwork: str | None = None
     rounds: List[int] = Field(default_factory=lambda: [1,2,4,7,11,16])
 
-class PreviewOut(BaseModel):
-    preview_url: str
-
 class GuessOut(BaseModel):
     valid: bool
     answer: str
 
 @lru_cache(maxsize=8)
 def _pick_song_for_day(day: str):
-    # do your daily_song() work here (calls Apple once)
     s = daily_song(day)
     if not s:
         return None
