@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List
-from applemusic import daily_song, lookup_track
+from applemusic import daily_song
 from game import isMatch
 
 app = FastAPI()
@@ -53,16 +53,6 @@ def get_daily_song():
         raise HTTPException(503, "No previewable track")
     return SongOut(**s)
 
-@app.get("/preview", response_model=PreviewOut)
-def preview(track_id: int):
-    tr = lookup_track(track_id)
-    if not tr:
-        raise HTTPException(status_code=404, detail="Track not found")
-    
-    url = tr["preview_url"]
-    if not url:
-        raise HTTPException(status_code=404, detail="No preview available")
-    return PreviewOut(preview_url = url)
 @app.get("/guess", response_model=GuessOut)
 def check_guess(guess: str):
     today = date.today().isoformat()

@@ -1,4 +1,3 @@
-# apple.py
 import hashlib
 import requests
 from typing import Dict, Any, List, Optional
@@ -68,19 +67,3 @@ def daily_song(date: str, salt: str = "iamthegoat",*, country: str = "US") -> Op
 
     return pick
 
-def lookup_track(track_id: int):
-    url = f"https://itunes.apple.com/lookup?id={track_id}"
-
-    response = requests.get(url)
-
-    data = response.json()
-    results = data.get("results", [])
-    track = results[0]
-
-    return {
-        "track_id": track_id,
-        "title": track.get("trackName"),
-        "artist": track.get("artistname"),
-        "preview_url": track.get("previewUrl"),
-        "artwork": track.get("artworkUrl100")
-    }

@@ -9,11 +9,6 @@ export async function getSong(){
     return res.data;
 }
 
-export async function getPreview(){
-    const res = await api.get("/preview",{ params: { track_id } });
-    return res.data;
-}
-
 export async function correctGuess(guess){
     const res = await api.get("/guess", { params: { guess } });
     return res.data;

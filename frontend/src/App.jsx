@@ -1,18 +1,19 @@
-import { useState, useEffect, useRef} from 'react'
-import './App.css'
-import { getSong, getPreview, correctGuess} from "./api";
-import PlayButton from "./components/PlayButton.jsx"
+import { useState, useEffect, useRef} from 'react';
+import './App.css';
+import { getSong} from "./api";
 import GuessBox from './components/GuessBox.jsx';
 
 function App() {
   const [song, setSong] = useState(null);
   const [roundIndex, setRoundIndex] = useState(0);
   const [revealAnswer, setRevealAnswer] = useState(false);
+  const [skipped,setskipped] = useState(false);
+  const [end, setEnd] = useState(false);
   const audioRef = useRef(null);
   const timeoutRef = useRef(null);
   const startedAtRef = useRef(0);
   const playTokenRef = useRef(0);
-  const [end, setEnd] = useState(false);
+
 
 
   useEffect(() => {
@@ -27,6 +28,15 @@ function App() {
     }
     loadSong();
   }, []);
+  if (!song || !song.rounds) {
+    return (
+      <div style={{ padding: 16 }}>
+        <audio ref={audioRef} preload="none" />
+        <p>Loading…</p>
+      </div>
+    );
+  }
+
   function scheduleStop(ms){
     const token = Date.now();
     playTokenRef.current = token;
@@ -43,7 +53,7 @@ function App() {
       }
       timeoutRef.current = null;
     }, Math.max(0,ms));
-  }
+  };
   const stopAudioAndTimer = () => {
     const a = audioRef.current;
     if (a) {
@@ -72,8 +82,10 @@ function App() {
   };
   const handleCorrect = (res) => {
     stopAudioAndTimer();
+    setskipped(false);
+    setEnd(true);
     setRevealAnswer(true);
-  }
+  };
   const handleIncorrect = (res) => {
     stopAudioAndTimer();
     const last = song ? song.rounds.length - 1 : 5;
@@ -84,8 +96,9 @@ function App() {
       setRevealAnswer(true);
       setEnd(true);
     }
+    setskipped(false);
 
-  }
+  };
   const handleSkip = () => {
     if(!song) return;
 
@@ -95,6 +108,7 @@ function App() {
     if(roundIndex >= lastInd){
       stopAudioAndTimer();
       setRevealAnswer(true);
+      setskipped(true);
       setEnd(true);
       return;
     }
@@ -113,39 +127,59 @@ function App() {
       }
       return next;
     });
+
     
 
   };
+  const total = song.rounds.length;
+  const currDur = song.rounds[roundIndex];
+  const nextDur = song.rounds[Math.min(roundIndex + 1, total - 1)];
+  const skipIncrement = Math.max(0, (nextDur ?? currDur) - currDur);
   return (
-    <>
-    
-      <audio ref={audioRef} preload="none" />
-      <PlayButton
-        onClick={playPreview}
+    <div>
+      <header className="header">
+        <h1>Heardle</h1>
+      </header>
+      <div
+        className="ticks"
+        style={{ gridTemplateColumns: `repeat(${total}, 1fr)` }}
       >
-        Play
-      </PlayButton>
-      <PlayButton
-        onClick={handleSkip}
-        disabled={!song || end}
-      >
-        Skip
-      </PlayButton>
+        {song.rounds.map((_, i) => (
+          <div key={i} className={`tick ${i <= roundIndex ? "tick--active" : ""}`} />
+        ))}
+      </div>
 
+      <div className="control-row">
+        <span className="time">0:00</span>
+        <button className="play-btn" onClick={playPreview} aria-label="Play">
+          ▶
+        </button>
+        <span className="time">{`0:${String(currDur).padStart(2, "0")}`}</span>
+      </div>
 
-      <p>Current round: {roundIndex + 1} / 6</p>
-      <GuessBox 
-        onCorrect={handleCorrect} 
-        onIncorrect={handleIncorrect}
-        revealAnswer={revealAnswer}
-        roundIndex={roundIndex}
-        disabled={!song || end}/>
+      <div className="guess-row">
+        <button className="btn-skip" onClick={handleSkip} disabled={end}>
+          {`SKIP ${skipIncrement ? `(+${skipIncrement}s)` : ""}`}
+        </button>
+
+        <GuessBox
+          onCorrect={handleCorrect}
+          onIncorrect={handleIncorrect}
+          revealAnswer={revealAnswer}
+          roundIndex={roundIndex}
+          disabled={end}
+        />
+      </div>
+
       {revealAnswer && (
-        <p style={{ marginTop: 8}}>
+        <p className="answer-line">
+          {skipped ? "Skipped — " : ""}
           Answer: <strong>{song.title} - {song.artist}</strong>
         </p>
       )}
-    </>
+
+      <audio ref={audioRef} preload="none" playsInline />
+    </div>
   );
 }
 
